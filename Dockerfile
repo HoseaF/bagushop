@@ -39,7 +39,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-COPY composer.json composer.lock ./
+COPY . .
 
 RUN composer install \
     --no-dev \
@@ -47,10 +47,6 @@ RUN composer install \
     --no-interaction \
     --no-progress \
     --optimize-autoloader
-
-COPY . .
-
-RUN php artisan package:discover
 
 RUN composer dump-autoload --optimize
 
