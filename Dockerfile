@@ -63,6 +63,7 @@ RUN apt-get update && apt-get install -y \
         pcntl \
         gd \
         intl \
+        calendar \
     && a2enmod rewrite headers
 
 WORKDIR /var/www/html
