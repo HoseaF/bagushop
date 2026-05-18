@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libicu-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
+    && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
         mbstring \
         zip \
@@ -30,14 +30,22 @@ RUN apt-get update && apt-get install -y \
         exif \
         pcntl \
         gd \
-        intl
+        intl \
+        calendar \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+RUN composer install \
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress \
+    --optimize-autoloader \
+    --no-scripts
 
 COPY . .
 RUN composer dump-autoload --optimize
@@ -54,7 +62,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libicu-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
+    && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
         mbstring \
         zip \
@@ -64,7 +72,8 @@ RUN apt-get update && apt-get install -y \
         gd \
         intl \
         calendar \
-    && a2enmod rewrite headers
+    && a2enmod rewrite headers \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
 
@@ -77,9 +86,8 @@ RUN mkdir -p \
     storage/framework/sessions \
     storage/framework/views \
     storage/logs \
-    bootstrap/cache
-
-RUN chown -R www-data:www-data storage bootstrap/cache
+    bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
 
 RUN cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
 <VirtualHost *:80>
