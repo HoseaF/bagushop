@@ -6,6 +6,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
 RUN npm run build
 
 
@@ -39,15 +40,18 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 COPY composer.json composer.lock ./
+
 RUN composer install \
     --no-dev \
     --prefer-dist \
     --no-interaction \
     --no-progress \
-    --optimize-autoloader \
-    --no-scripts
+    --optimize-autoloader
 
 COPY . .
+
+RUN php artisan package:discover
+
 RUN composer dump-autoload --optimize
 
 
@@ -78,6 +82,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /var/www/html
 
 COPY . .
+
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=assets /app/public/build ./public/build
 
@@ -87,7 +92,12 @@ RUN mkdir -p \
     storage/framework/views \
     storage/logs \
     bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    public/storage \
+    public/cache
+
+RUN touch storage/installed
+
+RUN chown -R www-data:www-data /var/www/html
 
 RUN cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
 <VirtualHost *:80>
@@ -104,6 +114,7 @@ RUN cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
 EOF
 
 COPY docker/start.sh /usr/local/bin/start.sh
+
 RUN chmod +x /usr/local/bin/start.sh
 
 EXPOSE 80

@@ -1,22 +1,25 @@
-#!/usr/bin/env bash
-
+#!/bin/sh
 set -e
 
-mkdir -p \
-  storage/framework/cache \
-  storage/framework/sessions \
-  storage/framework/views \
-  storage/logs \
-  bootstrap/cache
+cd /var/www/html
 
-php artisan config:clear
+echo "Clearing caches..."
+
+php artisan optimize:clear || true
+
+echo "Creating storage link..."
 
 php artisan storage:link || true
 
-if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
-  php artisan migrate --force
+if [ "$RUN_MIGRATIONS" = "true" ]; then
+    echo "Running migrations..."
+    php artisan migrate --force || true
 fi
 
-php artisan optimize
+echo "Ensuring Bagisto installed lock exists..."
 
-apache2-foreground
+touch storage/installed
+
+echo "Starting Apache..."
+
+exec apache2-foreground
