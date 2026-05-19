@@ -1,25 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 cd /var/www/html
 
-echo "Clearing caches..."
-
-php artisan optimize:clear || true
-
-echo "Creating storage link..."
-
-php artisan storage:link || true
-
-if [ "$RUN_MIGRATIONS" = "true" ]; then
-    echo "Running migrations..."
-    php artisan migrate --force || true
-fi
-
-echo "Ensuring Bagisto installed lock exists..."
+mkdir -p \
+    storage/app/public \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    public/cache
 
 touch storage/installed
 
-echo "Starting Apache..."
+rm -rf public/storage
+ln -s /var/www/html/storage/app/public public/storage
+
+chown -R www-data:www-data storage bootstrap/cache public/cache public/storage || true
+chmod -R ug+rwX storage bootstrap/cache public/cache public/storage || true
+
+php artisan optimize:clear || true
 
 exec apache2-foreground

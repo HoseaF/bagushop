@@ -2,12 +2,13 @@ FROM node:22-alpine AS assets
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
-
 COPY . .
 
-RUN npm run build
+RUN npm install && npm run build
+
+RUN cd packages/Webkul/Admin && npm install && npm run build
+
+RUN cd packages/Webkul/Shop && npm install && npm run build
 
 
 FROM php:8.3-cli AS vendor
@@ -77,23 +78,27 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /var/www/html
 
-COPY . .
+COPY --chown=www-data:www-data . .
 
-COPY --from=vendor /app/vendor ./vendor
-COPY --from=assets /app/public/build ./public/build
+COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
+COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
+COPY --from=assets --chown=www-data:www-data /app/public/themes ./public/themes
 
-RUN mkdir -p \
-    storage/framework/cache \
-    storage/framework/sessions \
-    storage/framework/views \
-    storage/logs \
-    bootstrap/cache \
-    public/storage \
-    public/cache
-
-RUN touch storage/installed
-
-RUN chown -R www-data:www-data /var/www/html
+RUN set -eux; \
+    mkdir -p \
+        storage/app/public \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+        public/cache; \
+    touch storage/installed; \
+    rm -rf public/storage; \
+    ln -s /var/www/html/storage/app/public public/storage; \
+    chown -R www-data:www-data storage bootstrap/cache public/cache public/storage; \
+    find storage bootstrap/cache public/cache -type d -exec chmod 775 {} \; ; \
+    find storage bootstrap/cache public/cache -type f -exec chmod 664 {} \;
 
 RUN cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
 <VirtualHost *:80>
