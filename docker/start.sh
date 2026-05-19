@@ -17,8 +17,8 @@ touch storage/installed
 rm -rf public/storage
 ln -s /var/www/html/storage/app/public public/storage
 
-chown -R www-data:www-data storage bootstrap/cache public/cache public/storage || true
-chmod -R ug+rwX storage bootstrap/cache public/cache public/storage || true
+chown -R www-data:www-data storage bootstrap/cache public/cache || true
+chmod -R ug+rwX storage bootstrap/cache public/cache || true
 
 php artisan optimize:clear || true
 

@@ -1,15 +1,10 @@
 FROM node:22-alpine AS assets
 
 WORKDIR /app
-
 COPY . .
-
 RUN npm install && npm run build
-
 RUN cd packages/Webkul/Admin && npm install && npm run build
-
 RUN cd packages/Webkul/Shop && npm install && npm run build
-
 
 FROM php:8.3-cli AS vendor
 
@@ -39,7 +34,6 @@ RUN apt-get update && apt-get install -y \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
-
 COPY . .
 
 RUN composer install \
@@ -47,10 +41,8 @@ RUN composer install \
     --prefer-dist \
     --no-interaction \
     --no-progress \
-    --optimize-autoloader
-
-RUN composer dump-autoload --optimize
-
+    --optimize-autoloader \
+ && composer dump-autoload --optimize
 
 FROM php:8.3-apache
 
@@ -79,7 +71,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /var/www/html
 
 COPY --chown=www-data:www-data . .
-
 COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
 COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
 COPY --from=assets --chown=www-data:www-data /app/public/themes ./public/themes
@@ -95,8 +86,8 @@ RUN set -eux; \
         public/cache; \
     touch storage/installed; \
     rm -rf public/storage; \
-    ln -s /var/www/html/storage/app/public public/storage; \
-    chown -R www-data:www-data storage bootstrap/cache public/cache public/storage; \
+    ln -s storage/app/public public/storage; \
+    chown -R www-data:www-data storage bootstrap/cache public/cache; \
     find storage bootstrap/cache public/cache -type d -exec chmod 775 {} \; ; \
     find storage bootstrap/cache public/cache -type f -exec chmod 664 {} \;
 
@@ -115,9 +106,7 @@ RUN cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
 EOF
 
 COPY docker/start.sh /usr/local/bin/start.sh
-
 RUN chmod +x /usr/local/bin/start.sh
 
 EXPOSE 80
-
 CMD ["/usr/local/bin/start.sh"]
